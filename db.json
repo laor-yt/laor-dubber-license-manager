@@ -24,6 +24,19 @@
       "created_date": "2026-05-14",
       "owner_name": "Theng Rithy",
       "owner_email": "Rithy"
+    },
+    {
+      "id": "LIC-MP55L7KZW0O",
+      "license_key": "AM2F-UIX6-0M5F",
+      "product_name": "LaorDubber",
+      "status": "active",
+      "end_date": "2026-05-30",
+      "max_devices": 1,
+      "devices": [],
+      "role": "user",
+      "created_date": "2026-05-14",
+      "owner_name": "User",
+      "owner_email": "user@laordubber.com"
     }
   ]
 }
