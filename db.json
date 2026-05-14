@@ -1,12 +1,6 @@
 {
   "licenses": [
     {
-      "id": "LIC-MP51F9PQ4BI",
-      "license_key": "A3MO-D86A-3PWV",
-      "product_name": "LaorDubber",
-      "status": "active",
-      "end_date": "Lifetime",
-      "max_devices": 10,
       "devices": [
         {
           "device_id": "E103E43C085D7644",
@@ -20,18 +14,18 @@
           "last_seen_utc": "2026-05-14T06:40:33.9597448Z"
         }
       ],
+      "id": "LIC-MP51F9PQ4BI",
+      "license_key": "A3MO-D86A-3PWV",
+      "product_name": "LaorDubber",
+      "status": "active",
+      "end_date": "Lifetime",
+      "max_devices": 10,
       "role": "admin",
       "created_date": "2026-05-14",
       "owner_name": "Theng",
       "owner_email": "Rithy"
     },
     {
-      "id": "LIC-MP56CTTCVFA",
-      "license_key": "T819-LL6Q-CP2Z",
-      "product_name": "LaorDubber",
-      "status": "active",
-      "end_date": "2026-05-20",
-      "max_devices": 2,
       "devices": [
         {
           "device_id": "E103E43C085D7644",
@@ -45,10 +39,29 @@
           "last_seen_utc": "2026-05-14T07:39:24.4054454Z"
         }
       ],
+      "id": "LIC-MP56CTTCVFA",
+      "license_key": "T819-LL6Q-CP2Z",
+      "product_name": "LaorDubber",
+      "status": "active",
+      "end_date": "2026-05-20",
+      "max_devices": 2,
       "role": "user",
       "created_date": "2026-05-14",
       "owner_name": "User",
       "owner_email": "user@laorduber.com"
+    },
+    {
+      "id": "LIC-MP57SKQL29V",
+      "license_key": "O8X1-SNEZ-D52I",
+      "product_name": "LaorDubber",
+      "status": "active",
+      "end_date": "2027-05-14",
+      "max_devices": 1,
+      "devices": [],
+      "role": "user",
+      "created_date": "2026-05-14",
+      "owner_name": "User",
+      "owner_email": "User"
     }
   ]
 }
