@@ -1,108 +1,17 @@
 {
   "licenses": [
     {
-      "id": "LIC-001",
-      "license_key": "A1B2-C3D4-E5F6",
-      "product_name": "Microsoft Office 365",
-      "status": "active",
-      "end_date": "2027-12-31",
-      "max_devices": 5,
-      "devices": [
-        {
-          "imei": "353456789012345",
-          "device_name": "Samsung Galaxy S24",
-          "registered_date": "2025-01-15"
-        },
-        {
-          "imei": "861234567890123",
-          "device_name": "iPhone 15 Pro",
-          "registered_date": "2025-03-10"
-        }
-      ],
-      "role": "admin",
-      "created_date": "2025-01-01",
-      "owner_name": "Laor Soft",
-      "owner_email": "laor@example.com"
-    },
-    {
-      "id": "LIC-002",
-      "license_key": "J9K0-L1M2-N3O4",
-      "product_name": "Adobe Creative Cloud",
+      "id": "LIC-MP51F9PQ4BI",
+      "license_key": "A3MO-D86A-3PWV",
+      "product_name": "LaorDubber",
       "status": "active",
       "end_date": "Lifetime",
-      "max_devices": 3,
-      "devices": [
-        {
-          "imei": "490154203237518",
-          "device_name": "MacBook Pro M3",
-          "registered_date": "2025-02-20"
-        }
-      ],
-      "role": "user",
-      "created_date": "2025-02-01",
-      "owner_name": "Dara Pich",
-      "owner_email": "dara@example.com"
-    },
-    {
-      "id": "LIC-003",
-      "license_key": "R7S8-T9U0-V1W2",
-      "product_name": "Windows 11 Pro",
-      "status": "expired",
-      "end_date": "2025-04-30",
-      "max_devices": 1,
-      "devices": [
-        {
-          "imei": "356938035643809",
-          "device_name": "Dell XPS 15",
-          "registered_date": "2024-06-15"
-        }
-      ],
-      "role": "user",
-      "created_date": "2024-06-01",
-      "owner_name": "Sokha Meas",
-      "owner_email": "sokha@example.com"
-    },
-    {
-      "id": "LIC-004",
-      "license_key": "Z5A6-B7C8-D9E0",
-      "product_name": "Sauce Labs Enterprise",
-      "status": "active",
-      "end_date": "2026-08-15",
       "max_devices": 10,
-      "devices": [
-        {
-          "imei": "352099001761481",
-          "device_name": "Pixel 8 Pro",
-          "registered_date": "2025-04-01"
-        },
-        {
-          "imei": "353490069873319",
-          "device_name": "OnePlus 12",
-          "registered_date": "2025-04-12"
-        },
-        {
-          "imei": "869170013949974",
-          "device_name": "Xiaomi 14 Pro",
-          "registered_date": "2025-05-01"
-        }
-      ],
-      "role": "admin",
-      "created_date": "2025-03-15",
-      "owner_name": "Vicheka Chan",
-      "owner_email": "vicheka@example.com"
-    },
-    {
-      "id": "LIC-005",
-      "license_key": "H3I4-J5K6-L7M8",
-      "product_name": "AutoCAD 2025",
-      "status": "revoked",
-      "end_date": "2026-01-01",
-      "max_devices": 2,
       "devices": [],
-      "role": "user",
-      "created_date": "2025-01-20",
-      "owner_name": "Bopha Noun",
-      "owner_email": "bopha@example.com"
+      "role": "admin",
+      "created_date": "2026-05-14",
+      "owner_name": "Theng",
+      "owner_email": "Rithy"
     }
   ]
 }
