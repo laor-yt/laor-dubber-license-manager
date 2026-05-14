@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laor License Manager</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <i class="fas fa-shield-halved"></i>
+      <span>Laor License<br>Manager</span>
+    </div>
+    <nav class="nav-menu">
+      <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <i class="fas fa-chart-pie"></i> <span data-i18n="nav_dashboard">Dashboard</span>
+      </a>
+      <a class="nav-item" data-page="licenses" onclick="navigate('licenses')">
+        <i class="fas fa-key"></i> <span data-i18n="nav_licenses">Licenses</span>
+      </a>
+      <a class="nav-item" data-page="devices" onclick="navigate('devices')">
+        <i class="fas fa-mobile-screen-button"></i> <span data-i18n="nav_devices">Devices</span>
+      </a>
+      <a class="nav-item" data-page="settings" onclick="navigate('settings')">
+        <i class="fas fa-gear"></i> <span data-i18n="nav_settings">Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Top Navbar -->
+    <header class="top-navbar">
+      <div class="left-section">
+        <button class="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h5 id="pageTitle">Dashboard</h5>
+      </div>
+      <div class="right-section">
+        <select class="btn-icon" id="langSwitcher" onchange="switchLang(this.value)" style="padding:4px 8px;">
+          <option value="en">🇺🇸 EN</option>
+          <option value="kh">🇰🇭 KH</option>
+        </select>
+        <button class="btn-icon" onclick="toggleTheme()" title="Toggle Dark/Light">
+          <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- ═══ DASHBOARD PAGE ═══ -->
+      <div id="page-dashboard">
+        <div class="row g-4 mb-4">
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card grad-1">
+              <div class="icon-circle"><i class="fas fa-key"></i></div>
+              <div class="stat-value" id="statTotal">0</div>
+              <div class="stat-label" data-i18n="stat_total">Total Licenses</div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card grad-2">
+              <div class="icon-circle"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-value" id="statActive">0</div>
+              <div class="stat-label" data-i18n="stat_active">Active</div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card grad-3">
+              <div class="icon-circle"><i class="fas fa-times-circle"></i></div>
+              <div class="stat-value" id="statExpired">0</div>
+              <div class="stat-label" data-i18n="stat_expired">Expired / Revoked</div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card grad-4">
+              <div class="icon-circle"><i class="fas fa-mobile-screen-button"></i></div>
+              <div class="stat-value" id="statDevices">0</div>
+              <div class="stat-label" data-i18n="stat_devices">Total Devices</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Licenses -->
+        <div class="data-table-wrapper">
+          <div class="table-header">
+            <h6 data-i18n="recent_licenses">Recent Licenses</h6>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="th_key">License Key</th>
+                  <th data-i18n="th_product">Product</th>
+                  <th data-i18n="th_owner">Owner</th>
+                  <th data-i18n="th_status">Status</th>
+                  <th data-i18n="th_end">End Date</th>
+                  <th data-i18n="th_devices">Devices</th>
+                </tr>
+              </thead>
+              <tbody id="recentTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ LICENSES PAGE ═══ -->
+      <div id="page-licenses" style="display:none;">
+        <div class="data-table-wrapper">
+          <div class="table-header">
+            <h6 data-i18n="all_licenses">All Licenses</h6>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <input type="text" class="search-box" id="searchLicense" placeholder="Search..." oninput="renderLicenses()">
+              <div class="filter-bar">
+                <select id="filterStatus" onchange="renderLicenses()">
+                  <option value="all" data-i18n="filter_all">All Status</option>
+                  <option value="active" data-i18n="filter_active">Active</option>
+                  <option value="expired" data-i18n="filter_expired">Expired</option>
+                  <option value="revoked" data-i18n="filter_revoked">Revoked</option>
+                </select>
+                <select id="filterRole" onchange="renderLicenses()">
+                  <option value="all" data-i18n="filter_all_role">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">User</option>
+                </select>
+              </div>
+              <button class="btn-primary-custom" onclick="openAddModal()">
+                <i class="fas fa-plus"></i> <span data-i18n="btn_add">Add License</span>
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th data-i18n="th_key">License Key</th>
+                  <th data-i18n="th_product">Product</th>
+                  <th data-i18n="th_owner">Owner</th>
+                  <th data-i18n="th_role">Role</th>
+                  <th data-i18n="th_status">Status</th>
+                  <th data-i18n="th_end">End Date</th>
+                  <th data-i18n="th_devices">Devices</th>
+                  <th data-i18n="th_actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="licenseTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ DEVICES PAGE ═══ -->
+      <div id="page-devices" style="display:none;">
+        <div class="data-table-wrapper">
+          <div class="table-header">
+            <h6 data-i18n="all_devices">All Devices</h6>
+            <input type="text" class="search-box" id="searchDevice" placeholder="Search IMEI or Name..." oninput="renderDevices()">
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th data-i18n="th_imei">IMEI</th>
+                  <th data-i18n="th_device_name">Device Name</th>
+                  <th data-i18n="th_license">License Key</th>
+                  <th data-i18n="th_product">Product</th>
+                  <th data-i18n="th_registered">Registered</th>
+                </tr>
+              </thead>
+              <tbody id="deviceTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ SETTINGS PAGE ═══ -->
+      <div id="page-settings" style="display:none;">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="settings-card">
+              <h6><i class="fas fa-download me-2"></i><span data-i18n="export_db">Export Database</span></h6>
+              <p style="font-size:13px;color:var(--text-muted);" data-i18n="export_desc">Download the current database as a JSON file.</p>
+              <button class="btn-primary-custom" onclick="exportDB()">
+                <i class="fas fa-file-export"></i> <span data-i18n="btn_export">Export JSON</span>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="settings-card">
+              <h6><i class="fas fa-upload me-2"></i><span data-i18n="import_db">Import Database</span></h6>
+              <p style="font-size:13px;color:var(--text-muted);" data-i18n="import_desc">Upload a JSON file to replace the current database.</p>
+              <input type="file" accept=".json" id="importFileInput" class="form-control mb-2" onchange="importDB(event)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+
+  <!-- ═══ ADD/EDIT LICENSE MODAL ═══ -->
+  <div class="modal fade" id="licenseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="licenseModalTitle">Add License</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editLicenseId">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" data-i18n="lbl_key">License Key</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="inputKey" placeholder="XXXX-XXXX-XXXX">
+                <button class="btn btn-outline-secondary" type="button" onclick="generateKey()"><i class="fas fa-random"></i></button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" data-i18n="lbl_product">Product Name</label>
+              <input type="text" class="form-control" id="inputProduct">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" data-i18n="lbl_status">Status</label>
+              <select class="form-select" id="inputStatus">
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+                <option value="revoked">Revoked</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" data-i18n="lbl_end">End Date</label>
+              <input type="text" class="form-control" id="inputEndDate" placeholder="YYYY-MM-DD or Lifetime">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" data-i18n="lbl_max_devices">Max Devices</label>
+              <input type="number" class="form-control" id="inputMaxDevices" min="1" value="1">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" data-i18n="lbl_role">Role</label>
+              <select class="form-select" id="inputRole">
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" data-i18n="lbl_owner">Owner Name</label>
+              <input type="text" class="form-control" id="inputOwner">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" data-i18n="lbl_email">Email</label>
+              <input type="email" class="form-control" id="inputEmail">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+          <button class="btn-primary-custom" onclick="saveLicense()" data-i18n="btn_save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DEVICE MANAGEMENT MODAL ═══ -->
+  <div class="modal fade" id="deviceModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-mobile-screen-button me-2"></i><span data-i18n="manage_devices">Manage Devices</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="deviceLicenseId">
+          <p class="mb-1" style="font-size:13px;color:var(--text-muted);">
+            <span data-i18n="lbl_key">License Key</span>: <strong id="deviceModalKey" class="license-key"></strong>
+          </p>
+          <p class="mb-3" style="font-size:13px;color:var(--text-muted);">
+            <span data-i18n="lbl_max_devices">Max Devices</span>: <strong id="deviceModalMax"></strong>
+          </p>
+          <div id="deviceList"></div>
+          <hr>
+          <h6 data-i18n="add_device">Add Device</h6>
+          <div class="row g-2">
+            <div class="col-6">
+              <input type="text" class="form-control" id="newDeviceImei" placeholder="IMEI">
+            </div>
+            <div class="col-6">
+              <input type="text" class="form-control" id="newDeviceName" placeholder="Device Name">
+            </div>
+            <div class="col-12 mt-2">
+              <button class="btn-primary-custom w-100" onclick="addDevice()">
+                <i class="fas fa-plus"></i> <span data-i18n="btn_add_device">Add Device</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DELETE CONFIRM MODAL ═══ -->
+  <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content text-center p-4">
+        <i class="fas fa-trash-alt mb-3" style="font-size:40px;color:#dc3545;"></i>
+        <h6 data-i18n="delete_confirm">Are you sure you want to delete this license?</h6>
+        <input type="hidden" id="deleteLicenseId">
+        <div class="mt-3 d-flex justify-content-center gap-2">
+          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete()" data-i18n="btn_delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
