@@ -4,6 +4,11 @@
 // ═══════════════════════════════════════════════════
 
 let db = { licenses: [] };
+const PUBLIC_DB_URL = "https://laor-yt.github.io/laor-dubber-license-manager/db.json";
+const BACKEND_DB_URL = "/api/db";
+const API_DB_URL = window.location.hostname.endsWith("github.io") || window.location.protocol === "file:"
+  ? PUBLIC_DB_URL
+  : BACKEND_DB_URL;
 let currentLang = localStorage.getItem("lang") || "en";
 let currentTheme = localStorage.getItem("theme") || "light";
 
@@ -154,11 +159,82 @@ document.addEventListener("DOMContentLoaded", () => {
   loadDB();
 });
 
+function normalizeDB(data) {
+  const normalized = data && Array.isArray(data.licenses) ? data : { licenses: [] };
+  normalized.licenses = normalized.licenses.map(license => ({
+    devices: [],
+    ...license,
+    devices: Array.isArray(license.devices) ? license.devices : []
+  }));
+  return normalized;
+}
+
 function loadDB() {
-  fetch("db.json")
-    .then(r => r.json())
-    .then(data => { db = data; refreshAll(); })
-    .catch(() => { db = { licenses: [] }; refreshAll(); });
+  // Load live license data. When running with server.js, this uses /api/db.
+  // On GitHub Pages or local file preview, it falls back to the public hosted db.json.
+  fetch(`${API_DB_URL}?t=${Date.now()}`, { cache: "no-store" })
+    .then(response => {
+      if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      db = normalizeDB(data);
+      refreshAll();
+    })
+    .catch(error => {
+      console.error("Could not load API db.json. Falling back to local db.json.", error);
+      fetch("db.json", { cache: "no-store" })
+        .then(response => response.json())
+        .then(data => { db = normalizeDB(data); refreshAll(); })
+        .catch(() => { db = { licenses: [] }; refreshAll(); });
+    });
+}
+
+
+async function getAdminKey() {
+  let adminKey = sessionStorage.getItem("adminSaveKey") || "";
+  if (!adminKey) {
+    adminKey = window.prompt("Enter your admin save key to update GitHub db.json:") || "";
+    if (adminKey) sessionStorage.setItem("adminSaveKey", adminKey);
+  }
+  return adminKey;
+}
+
+async function syncDBToGitHub() {
+  // GitHub tokens must stay on the server. This sends db changes to server.js,
+  // which reads GITHUB_TOKEN from .env and updates db.json through GitHub's API.
+  if (API_DB_URL !== BACKEND_DB_URL) {
+    showToast("Local change only. Run server.js to save directly to GitHub.", "#f7971e");
+    return;
+  }
+
+  try {
+    const adminKey = await getAdminKey();
+    if (!adminKey) {
+      showToast("Save cancelled: admin key is required.", "#f7971e");
+      return;
+    }
+
+    const response = await fetch(BACKEND_DB_URL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": adminKey
+      },
+      body: JSON.stringify(db, null, 2)
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) sessionStorage.removeItem("adminSaveKey");
+      throw new Error(result.error || `Save failed: HTTP ${response.status}`);
+    }
+
+    showToast("Saved to GitHub db.json");
+  } catch (error) {
+    console.error("Could not save to GitHub db.json", error);
+    showToast(error.message || "Could not save to GitHub db.json", "#dc3545");
+  }
 }
 
 function refreshAll() {
@@ -395,6 +471,7 @@ function saveLicense() {
 
   bootstrap.Modal.getInstance(document.getElementById("licenseModal")).hide();
   refreshAll();
+  syncDBToGitHub();
 }
 
 // ── Delete License ──
@@ -408,6 +485,7 @@ function confirmDelete() {
   bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();
   showToast(t("toast_deleted"), "#dc3545");
   refreshAll();
+  syncDBToGitHub();
 }
 
 // ── Device Management Modal ──
@@ -458,6 +536,7 @@ function addDevice() {
   renderDeviceList(lic);
   refreshAll();
   showToast(t("toast_device_added"));
+  syncDBToGitHub();
 }
 
 function removeDevice(index) {
@@ -468,6 +547,7 @@ function removeDevice(index) {
   renderDeviceList(lic);
   refreshAll();
   showToast(t("toast_device_removed"), "#dc3545");
+  syncDBToGitHub();
 }
 
 // ── Export / Import ──
@@ -490,6 +570,7 @@ function importDB(e) {
         db = data;
         refreshAll();
         showToast(t("toast_imported"));
+        syncDBToGitHub();
       }
     } catch (err) {
       showToast("Invalid JSON file!", "#dc3545");

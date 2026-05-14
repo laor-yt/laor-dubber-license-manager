@@ -1,0 +1,13 @@
+{
+  "name": "laor-license-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Laor License Manager with secure GitHub db.json editing",
+  "scripts": {
+    "start": "node server.js",
+    "push-db": "node github-update-db.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
