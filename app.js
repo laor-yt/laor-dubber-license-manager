@@ -5,12 +5,32 @@
 
 let db = { licenses: [] };
 const PUBLIC_DB_URL = "https://laor-yt.github.io/laor-dubber-license-manager/db.json";
-const BACKEND_DB_URL = "/api/db";
-const API_DB_URL = window.location.hostname.endsWith("github.io") || window.location.protocol === "file:"
-  ? PUBLIC_DB_URL
-  : BACKEND_DB_URL;
+const API_BASE_STORAGE_KEY = "laorApiBaseUrl";
+const ADMIN_KEY_STORAGE_KEY = "adminSaveKey";
 let currentLang = localStorage.getItem("lang") || "en";
 let currentTheme = localStorage.getItem("theme") || "light";
+
+function cleanApiBaseUrl(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function getConfiguredApiBaseUrl() {
+  return cleanApiBaseUrl(window.LAOR_API_BASE_URL || localStorage.getItem(API_BASE_STORAGE_KEY) || "");
+}
+
+function isStaticPreview() {
+  return window.location.protocol === "file:" || window.location.hostname.endsWith("github.io");
+}
+
+function getBackendDbUrl() {
+  const configuredBaseUrl = getConfiguredApiBaseUrl();
+  if (configuredBaseUrl) return `${configuredBaseUrl}/api/db`;
+  return isStaticPreview() ? "" : "/api/db";
+}
+
+function getReadDbUrl() {
+  return getBackendDbUrl() || PUBLIC_DB_URL;
+}
 
 // ── i18n Translations ──
 const i18n = {
@@ -156,6 +176,7 @@ function t(key) {
 document.addEventListener("DOMContentLoaded", () => {
   applyTheme();
   document.getElementById("langSwitcher").value = currentLang;
+  initApiSettings();
   loadDB();
 });
 
@@ -169,33 +190,128 @@ function normalizeDB(data) {
   return normalized;
 }
 
-function loadDB() {
-  // Load live license data. When running with server.js, this uses /api/db.
-  // On GitHub Pages or local file preview, it falls back to the public hosted db.json.
-  fetch(`${API_DB_URL}?t=${Date.now()}`, { cache: "no-store" })
-    .then(response => {
-      if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-      return response.json();
-    })
-    .then(data => {
+async function loadDB() {
+  // Load live license data. If a backend API is configured, read through it;
+  // otherwise read the public GitHub Pages db.json endpoint.
+  const readUrl = getReadDbUrl();
+  setApiStatus(`Loading database from ${readUrl} ...`);
+
+  try {
+    const response = await fetch(`${readUrl}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+    const data = await response.json();
+    db = normalizeDB(data);
+    refreshAll();
+    updateApiStatus();
+    showToast("Database loaded from API");
+  } catch (error) {
+    console.error("Could not load API db.json. Falling back to local db.json.", error);
+    try {
+      const response = await fetch("db.json", { cache: "no-store" });
+      const data = await response.json();
       db = normalizeDB(data);
       refreshAll();
-    })
-    .catch(error => {
-      console.error("Could not load API db.json. Falling back to local db.json.", error);
-      fetch("db.json", { cache: "no-store" })
-        .then(response => response.json())
-        .then(data => { db = normalizeDB(data); refreshAll(); })
-        .catch(() => { db = { licenses: [] }; refreshAll(); });
-    });
+      setApiStatus("API load failed. Showing local db.json fallback.", true);
+    } catch (_) {
+      db = { licenses: [] };
+      refreshAll();
+      setApiStatus("API load failed and local db.json could not be loaded.", true);
+    }
+  }
 }
 
+function setApiStatus(message, isError = false) {
+  const statusEl = document.getElementById("apiStatusText");
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.style.color = isError ? "#dc3545" : "var(--text-muted)";
+}
+
+function updateApiStatus() {
+  const backendUrl = getBackendDbUrl();
+  const readUrl = getReadDbUrl();
+  const mode = backendUrl ? "Read/write backend enabled" : "Read-only public API mode";
+  setApiStatus(`${mode}. Reading from: ${readUrl}`);
+}
+
+function initApiSettings() {
+  const apiInput = document.getElementById("apiBaseUrlInput");
+  if (apiInput) apiInput.value = getConfiguredApiBaseUrl();
+
+  const adminInput = document.getElementById("adminKeyInput");
+  if (adminInput) adminInput.value = sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY) || "";
+
+  updateApiStatus();
+}
+
+function saveApiBaseUrl() {
+  const input = document.getElementById("apiBaseUrlInput");
+  const value = cleanApiBaseUrl(input && input.value);
+  if (value) localStorage.setItem(API_BASE_STORAGE_KEY, value);
+  else localStorage.removeItem(API_BASE_STORAGE_KEY);
+  updateApiStatus();
+  showToast(value ? "Backend API URL saved" : "Backend API URL cleared");
+  loadDB();
+}
+
+function clearApiBaseUrl() {
+  localStorage.removeItem(API_BASE_STORAGE_KEY);
+  const input = document.getElementById("apiBaseUrlInput");
+  if (input) input.value = "";
+  updateApiStatus();
+  showToast("Backend API URL cleared", "#f7971e");
+  loadDB();
+}
+
+function saveAdminKeySetting() {
+  const input = document.getElementById("adminKeyInput");
+  const value = input ? input.value.trim() : "";
+  if (value) sessionStorage.setItem(ADMIN_KEY_STORAGE_KEY, value);
+  else sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+  showToast(value ? "Admin key saved for this browser session" : "Admin key cleared", value ? undefined : "#f7971e");
+}
+
+function clearAdminKeySetting() {
+  sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+  const input = document.getElementById("adminKeyInput");
+  if (input) input.value = "";
+  showToast("Admin key cleared", "#f7971e");
+}
+
+async function checkApiStatus() {
+  const backendUrl = getBackendDbUrl();
+  if (!backendUrl) {
+    setApiStatus("No write backend configured. Public GitHub Pages db.json is read-only.", true);
+    return;
+  }
+
+  const statusUrl = backendUrl.replace(/\/api\/db$/, "/api/status");
+  try {
+    const response = await fetch(`${statusUrl}?t=${Date.now()}`, { cache: "no-store" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `Status failed: HTTP ${response.status}`);
+    const writeState = result.can_write ? "write ready" : "server missing token or admin key";
+    setApiStatus(`Backend connected: ${result.owner}/${result.repo}/${result.file_path} (${writeState})`);
+    showToast("Backend API connected");
+  } catch (error) {
+    setApiStatus(error.message || "Backend API status check failed", true);
+    showToast(error.message || "Backend API status check failed", "#dc3545");
+  }
+}
 
 async function getAdminKey() {
-  let adminKey = sessionStorage.getItem("adminSaveKey") || "";
+  let adminKey = sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY) || "";
+  const input = document.getElementById("adminKeyInput");
+  if (input && input.value.trim()) {
+    adminKey = input.value.trim();
+    sessionStorage.setItem(ADMIN_KEY_STORAGE_KEY, adminKey);
+  }
   if (!adminKey) {
     adminKey = window.prompt("Enter your admin save key to update GitHub db.json:") || "";
-    if (adminKey) sessionStorage.setItem("adminSaveKey", adminKey);
+    if (adminKey) {
+      sessionStorage.setItem(ADMIN_KEY_STORAGE_KEY, adminKey);
+      if (input) input.value = adminKey;
+    }
   }
   return adminKey;
 }
@@ -203,8 +319,10 @@ async function getAdminKey() {
 async function syncDBToGitHub() {
   // GitHub tokens must stay on the server. This sends db changes to server.js,
   // which reads GITHUB_TOKEN from .env and updates db.json through GitHub's API.
-  if (API_DB_URL !== BACKEND_DB_URL) {
-    showToast("Local change only. Run server.js to save directly to GitHub.", "#f7971e");
+  const backendUrl = getBackendDbUrl();
+  if (!backendUrl) {
+    showToast("Read-only mode. Add a backend API URL in Settings to save to GitHub db.json.", "#f7971e");
+    updateApiStatus();
     return;
   }
 
@@ -215,7 +333,8 @@ async function syncDBToGitHub() {
       return;
     }
 
-    const response = await fetch(BACKEND_DB_URL, {
+    setApiStatus("Saving database to GitHub db.json ...");
+    const response = await fetch(backendUrl, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -226,13 +345,15 @@ async function syncDBToGitHub() {
 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) sessionStorage.removeItem("adminSaveKey");
+      if (response.status === 401 || response.status === 403) sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
       throw new Error(result.error || `Save failed: HTTP ${response.status}`);
     }
 
-    showToast("Saved to GitHub db.json");
+    setApiStatus(`Saved to GitHub db.json${result.commit ? ` at commit ${String(result.commit).slice(0, 7)}` : ""}`);
+    showToast("Saved to API database");
   } catch (error) {
     console.error("Could not save to GitHub db.json", error);
+    setApiStatus(error.message || "Could not save to GitHub db.json", true);
     showToast(error.message || "Could not save to GitHub db.json", "#dc3545");
   }
 }

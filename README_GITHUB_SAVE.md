@@ -1,36 +1,37 @@
 # Direct GitHub save for `db.json`
 
-This version can read and write `db.json` through a small Node server. The GitHub token stays in `.env` on the server and is never placed in frontend JavaScript.
+This version can read and write the remote `db.json` used by:
 
-## Setup
-
-1. Revoke the token you pasted into chat and create a new GitHub token.
-2. Give the new token access to `laor-yt/laor-dubber-license-manager` with **Contents: Read and write**.
-3. Copy `.env.example` to `.env`.
-4. Put your new token in `.env` as `GITHUB_TOKEN=...`.
-5. Set `ADMIN_KEY` to any private password you want.
-6. Run:
-
-```bash
-node server.js
+```text
+https://laor-yt.github.io/laor-dubber-license-manager/db.json
 ```
 
-7. Open:
+The browser does not write to GitHub directly. It sends edits to `server.js`; the server uses `GITHUB_TOKEN` from `.env` to update `db.json` safely.
+
+For full setup instructions, read `README_API_DATABASE_EDIT.md`.
+
+## Quick local setup
+
+```bash
+cp .env.example .env
+# edit .env with a NEW GitHub token and ADMIN_KEY
+npm start
+```
+
+Open:
 
 ```text
 http://localhost:3000
 ```
-
-When you add, edit, delete, import, or change devices, the app asks for the admin key and saves the new JSON to GitHub `db.json`.
 
 ## One-shot upload
 
 To upload the local `db.json` file without opening the app:
 
 ```bash
-node github-update-db.js
+npm run push-db
 ```
 
 ## Important
 
-Do not host this exact server publicly unless you use a strong `ADMIN_KEY` and HTTPS. Never put `GITHUB_TOKEN` inside `app.js`, `index.html`, or any GitHub Pages file.
+Never put `GITHUB_TOKEN` inside frontend files like `app.js`, `index.html`, or `config.js`. A token in frontend code can be stolen by anyone who opens the page.

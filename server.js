@@ -17,6 +17,10 @@ const TOKEN = process.env.GITHUB_TOKEN || '';
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const API_VERSION = '2022-11-28';
 const STATIC_DIR = __dirname;
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '*')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
 
 function loadDotEnv(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -33,6 +37,19 @@ function loadDotEnv(filePath) {
     }
     if (!process.env[key]) process.env[key] = value;
   }
+}
+
+function setCorsHeaders(req, res) {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes('*')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-key');
+  res.setHeader('Access-Control-Max-Age', '86400');
 }
 
 function sendJson(res, status, data) {
@@ -162,7 +179,26 @@ function serveStatic(req, res) {
 
 const server = http.createServer(async (req, res) => {
   try {
+    setCorsHeaders(req, res);
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     const url = new URL(req.url, `http://${req.headers.host}`);
+
+    if (url.pathname === '/api/status' && req.method === 'GET') {
+      sendJson(res, 200, {
+        ok: true,
+        owner: OWNER,
+        repo: REPO,
+        branch: BRANCH,
+        file_path: FILE_PATH,
+        can_write: Boolean(TOKEN && ADMIN_KEY)
+      });
+      return;
+    }
 
     if (url.pathname === '/api/db' && req.method === 'GET') {
       const current = await getGitHubFile();
