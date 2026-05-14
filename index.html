@@ -206,30 +206,50 @@
             <div class="settings-card">
               <h6><i class="fas fa-database me-2"></i>API Database Editor</h6>
               <p style="font-size:13px;color:var(--text-muted);">
-                Use a backend server to edit the API database at <code>db.json</code>. Keep the GitHub token on the server only.
+                Saves changes back to the GitHub-hosted <code>db.json</code> database. Use either a backend server, or Direct GitHub Save for GitHub Pages/static hosting.
               </p>
-              <label class="form-label">Backend API URL</label>
-              <input type="url" class="form-control mb-2" id="apiBaseUrlInput" placeholder="https://your-backend.example.com">
-              <div class="d-flex gap-2 flex-wrap mb-3">
-                <button class="btn-primary-custom" type="button" onclick="saveApiBaseUrl()">
-                  <i class="fas fa-link"></i> Save API URL
-                </button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearApiBaseUrl()">Clear URL</button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="checkApiStatus()">Test API</button>
+
+              <div class="mb-3 p-3" style="border:1px solid var(--border-color);border-radius:12px;">
+                <strong>Option 1: Backend API Save</strong>
+                <p style="font-size:13px;color:var(--text-muted);margin:6px 0 12px;">Best for production. The GitHub token stays in <code>server.js</code> / <code>.env</code>.</p>
+                <label class="form-label">Backend API URL</label>
+                <input type="url" class="form-control mb-2" id="apiBaseUrlInput" placeholder="https://your-backend.example.com">
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                  <button class="btn-primary-custom" type="button" onclick="saveApiBaseUrl()">
+                    <i class="fas fa-link"></i> Save API URL
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearApiBaseUrl()">Clear URL</button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="checkApiStatus()">Test Save Connection</button>
+                </div>
+
+                <label class="form-label">Admin Save Key</label>
+                <input type="password" class="form-control mb-2" id="adminKeyInput" placeholder="ADMIN_KEY from your server .env">
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn-primary-custom" type="button" onclick="saveAdminKeySetting()">
+                    <i class="fas fa-key"></i> Save Admin Key
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearAdminKeySetting()">Clear Key</button>
+                </div>
               </div>
 
-              <label class="form-label">Admin Save Key</label>
-              <input type="password" class="form-control mb-2" id="adminKeyInput" placeholder="ADMIN_KEY from your server .env">
-              <div class="d-flex gap-2 flex-wrap mb-3">
-                <button class="btn-primary-custom" type="button" onclick="saveAdminKeySetting()">
-                  <i class="fas fa-key"></i> Save Admin Key
-                </button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearAdminKeySetting()">Clear Key</button>
+              <div class="mb-3 p-3" style="border:1px solid var(--border-color);border-radius:12px;">
+                <strong>Option 2: Direct GitHub Save</strong>
+                <p style="font-size:13px;color:var(--text-muted);margin:6px 0 12px;">Fixes the static GitHub Pages save error. Your token is kept only in this browser tab/session and is never written into the project files.</p>
+                <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;">Target: <code id="githubTargetText">laor-yt/laor-dubber-license-manager/db.json</code></p>
+                <label class="form-label">GitHub Token</label>
+                <input type="password" class="form-control mb-2" id="githubTokenInput" placeholder="Fine-grained token with Contents: Read and write">
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                  <button class="btn-primary-custom" type="button" onclick="saveGitHubTokenSetting()">
+                    <i class="fab fa-github"></i> Save Token for Session
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="clearGitHubTokenSetting()">Clear Token</button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="checkDirectGitHubStatus()">Test Direct GitHub</button>
+                </div>
               </div>
 
               <div class="d-flex gap-2 flex-wrap mb-2">
                 <button class="btn-primary-custom" type="button" onclick="syncDBToGitHub()">
-                  <i class="fas fa-cloud-upload-alt"></i> Save Current Data to API
+                  <i class="fas fa-cloud-upload-alt"></i> Save Current Data to API Database
                 </button>
                 <button class="btn btn-outline-secondary btn-sm" type="button" onclick="loadDB()">
                   <i class="fas fa-rotate"></i> Reload from API

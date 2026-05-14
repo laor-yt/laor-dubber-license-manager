@@ -1,35 +1,48 @@
 # Edit the API database (`db.json`)
 
-The public URL below is a static GitHub Pages JSON file:
+The public URL below is the database the app reads:
 
 ```text
 https://laor-yt.github.io/laor-dubber-license-manager/db.json
 ```
 
-Static GitHub Pages files are read-only from the browser. To edit the API database, this project now includes a small backend API that updates GitHub `db.json` through the GitHub Contents API. The frontend can run locally or on GitHub Pages and send edits to that backend.
+This fixed version can save changes in two ways:
 
-## Files added/updated
+1. **Backend API Save** - recommended for production. `server.js` keeps the GitHub token in `.env` and exposes `GET /api/db`, `PUT /api/db`, and `GET /api/status`.
+2. **Direct GitHub Save** - fixes the GitHub Pages/static hosting error. Go to **Settings -> API Database Editor -> Direct GitHub Save**, enter a GitHub token for the current browser session, then click **Save Current Data to API Database**.
 
-- `server.js` - backend API with:
-  - `GET /api/status` - test backend configuration
-  - `GET /api/db` - read the latest GitHub `db.json`
-  - `PUT /api/db` - update GitHub `db.json`
-- `app.js` - add/edit/delete/import/device changes now save to the backend API when configured.
-- `index.html` - Settings page now has an API Database Editor section.
-- `config.js` - optional public frontend config for your backend URL.
-- `.env.example` - server secret configuration template.
+## What was fixed
 
-## Local setup
+The old warning said:
 
-1. Create a new GitHub token. Do not reuse a token that was pasted into chat.
-2. Give it access to this repo with **Contents: Read and write**.
-3. Copy `.env.example` to `.env`:
+```text
+Local change only. Run server.js to save directly to GitHub.
+```
+
+That happened when the app was opened from GitHub Pages without a running backend API. This version no longer gets stuck in local-only mode. If no backend URL is configured, it falls back to Direct GitHub Save and updates `db.json` with the GitHub Contents API from your browser session.
+
+## Direct GitHub Save setup
+
+1. Create a new GitHub token. Do not reuse any token pasted into chat.
+2. Give it repository permission: **Contents: Read and write** for `laor-yt/laor-dubber-license-manager`.
+3. Open the app.
+4. Go to **Settings -> API Database Editor -> Direct GitHub Save**.
+5. Paste the token into **GitHub Token**.
+6. Click **Save Token for Session**.
+7. Click **Test Direct GitHub**.
+8. Edit a license or click **Save Current Data to API Database**.
+
+The token is stored only in `sessionStorage` for the current browser session. It is not written to `app.js`, `index.html`, `config.js`, or `db.json`.
+
+## Backend API Save setup
+
+1. Copy `.env.example` to `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Edit `.env`:
+2. Edit `.env`:
 
 ```env
 GITHUB_TOKEN=your_new_token_here
@@ -42,13 +55,13 @@ ALLOWED_ORIGINS=*
 PORT=3000
 ```
 
-5. Start the API + web app:
+3. Start the API + web app:
 
 ```bash
 npm start
 ```
 
-6. Open:
+4. Open:
 
 ```text
 http://localhost:3000
@@ -58,19 +71,9 @@ Now Add, Edit, Delete, Import, Add Device, and Remove Device will save to GitHub
 
 ## Use from GitHub Pages
 
-If your frontend is hosted at GitHub Pages, deploy `server.js` to a Node host such as Render, Railway, Fly.io, or your VPS.
+For the easiest static setup, use **Direct GitHub Save** in Settings.
 
-Then either:
-
-1. Open the app, go to **Settings -> API Database Editor**, and set your backend URL, for example:
-
-```text
-https://your-laor-api.onrender.com
-```
-
-or
-
-2. Edit `config.js` before uploading the frontend:
+For production, deploy `server.js` to a Node host such as Render, Railway, Fly.io, or your VPS. Then set the backend URL in **Settings -> API Database Editor**, or edit `config.js` before uploading the frontend:
 
 ```js
 window.LAOR_API_BASE_URL = "https://your-laor-api.onrender.com";
@@ -80,7 +83,8 @@ Do not include `/api/db` in the field. Use only the base URL.
 
 ## Security notes
 
-- Never put `GITHUB_TOKEN` in `app.js`, `index.html`, `config.js`, or any GitHub Pages file.
+- Do not hardcode a GitHub token in `app.js`, `index.html`, `config.js`, or any GitHub Pages file.
+- Direct GitHub Save is convenient for your private admin use. Backend API Save is safer for public/production use.
 - `ADMIN_KEY` is not a GitHub token. It is just a password your browser sends to your backend.
-- For production, set `ALLOWED_ORIGINS=https://laor-yt.github.io` instead of `*`.
+- For production backend hosting, set `ALLOWED_ORIGINS=https://laor-yt.github.io` instead of `*`.
 - Use HTTPS for the deployed backend.

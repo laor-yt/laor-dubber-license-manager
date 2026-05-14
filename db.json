@@ -22,33 +22,8 @@
       ],
       "role": "admin",
       "created_date": "2026-05-14",
-      "owner_name": "Theng Rithy",
+      "owner_name": "Theng",
       "owner_email": "Rithy"
-    },
-    {
-      "id": "LIC-MP55L7KZW0O",
-      "license_key": "AM2F-UIX6-0M5F",
-      "product_name": "LaorDubber",
-      "status": "active",
-      "end_date": "2026-05-30",
-      "max_devices": 1,
-      "devices": [
-        {
-          "device_id": "E103E43C085D7644",
-          "imei": "E103E43C085D7644",
-          "device_name": "ADMINTHR",
-          "user_name": "AdminThR",
-          "os_version": "Microsoft Windows NT 10.0.19045.0",
-          "app_version": "v1.0.5",
-          "registered_date": "2026-05-14",
-          "first_seen_utc": "2026-05-14T07:18:05.3912267Z",
-          "last_seen_utc": "2026-05-14T07:18:05.3912267Z"
-        }
-      ],
-      "role": "user",
-      "created_date": "2026-05-14",
-      "owner_name": "User",
-      "owner_email": "user@laordubber.com"
     }
   ]
 }

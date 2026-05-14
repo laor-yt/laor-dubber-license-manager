@@ -4,9 +4,14 @@
 // ═══════════════════════════════════════════════════
 
 let db = { licenses: [] };
-const PUBLIC_DB_URL = "https://laor-yt.github.io/laor-dubber-license-manager/db.json";
+const PUBLIC_DB_URL = window.LAOR_PUBLIC_DB_URL || "https://laor-yt.github.io/laor-dubber-license-manager/db.json";
+const GITHUB_OWNER = window.LAOR_GITHUB_OWNER || "laor-yt";
+const GITHUB_REPO = window.LAOR_GITHUB_REPO || "laor-dubber-license-manager";
+const GITHUB_BRANCH = window.LAOR_GITHUB_BRANCH || "main";
+const GITHUB_FILE_PATH = window.LAOR_GITHUB_FILE_PATH || "db.json";
 const API_BASE_STORAGE_KEY = "laorApiBaseUrl";
 const ADMIN_KEY_STORAGE_KEY = "adminSaveKey";
+const DIRECT_GITHUB_TOKEN_STORAGE_KEY = "directGitHubToken";
 let currentLang = localStorage.getItem("lang") || "en";
 let currentTheme = localStorage.getItem("theme") || "light";
 
@@ -30,6 +35,39 @@ function getBackendDbUrl() {
 
 function getReadDbUrl() {
   return getBackendDbUrl() || PUBLIC_DB_URL;
+}
+
+function encodeGitHubPath(filePath) {
+  return String(filePath || "db.json").split("/").map(encodeURIComponent).join("/");
+}
+
+function getGitHubContentsApiUrl(includeRef = true) {
+  const base = `https://api.github.com/repos/${encodeURIComponent(GITHUB_OWNER)}/${encodeURIComponent(GITHUB_REPO)}/contents/${encodeGitHubPath(GITHUB_FILE_PATH)}`;
+  return includeRef ? `${base}?ref=${encodeURIComponent(GITHUB_BRANCH)}` : base;
+}
+
+function githubApiHeaders(token) {
+  return {
+    "Accept": "application/vnd.github+json",
+    "Authorization": `Bearer ${token}`,
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+}
+
+function base64EncodeUtf8(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function validateDatabaseShape(data) {
+  if (!data || !Array.isArray(data.licenses)) {
+    throw new Error('Invalid db.json: expected top-level { "licenses": [] }');
+  }
 }
 
 // ── i18n Translations ──
@@ -241,6 +279,14 @@ function initApiSettings() {
   const adminInput = document.getElementById("adminKeyInput");
   if (adminInput) adminInput.value = sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY) || "";
 
+  const directTokenInput = document.getElementById("githubTokenInput");
+  if (directTokenInput) directTokenInput.value = sessionStorage.getItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY) || "";
+
+  const githubTargetEl = document.getElementById("githubTargetText");
+  if (githubTargetEl) {
+    githubTargetEl.textContent = `${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_FILE_PATH} on ${GITHUB_BRANCH}`;
+  }
+
   updateApiStatus();
 }
 
@@ -278,10 +324,64 @@ function clearAdminKeySetting() {
   showToast("Admin key cleared", "#f7971e");
 }
 
+function saveGitHubTokenSetting() {
+  const input = document.getElementById("githubTokenInput");
+  const value = input ? input.value.trim() : "";
+  if (value) sessionStorage.setItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY, value);
+  else sessionStorage.removeItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY);
+  showToast(value ? "GitHub token saved for this browser session" : "GitHub token cleared", value ? undefined : "#f7971e");
+}
+
+function clearGitHubTokenSetting() {
+  sessionStorage.removeItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY);
+  const input = document.getElementById("githubTokenInput");
+  if (input) input.value = "";
+  showToast("GitHub token cleared", "#f7971e");
+}
+
+async function getDirectGitHubToken() {
+  let token = sessionStorage.getItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY) || "";
+  const input = document.getElementById("githubTokenInput");
+  if (input && input.value.trim()) {
+    token = input.value.trim();
+    sessionStorage.setItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY, token);
+  }
+  if (!token) {
+    token = window.prompt("Enter a GitHub token with Contents read/write permission for this repository:") || "";
+    if (token) {
+      sessionStorage.setItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY, token);
+      if (input) input.value = token;
+    }
+  }
+  return token;
+}
+
+async function checkDirectGitHubStatus() {
+  const token = await getDirectGitHubToken();
+  if (!token) {
+    setApiStatus("No backend configured. Add a backend URL or enter a GitHub token in Direct GitHub Save.", true);
+    return;
+  }
+
+  try {
+    const response = await fetch(`${getGitHubContentsApiUrl(true)}&t=${Date.now()}`, {
+      headers: githubApiHeaders(token),
+      cache: "no-store"
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || `GitHub check failed: HTTP ${response.status}`);
+    setApiStatus(`Direct GitHub connected: ${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_FILE_PATH} on ${GITHUB_BRANCH}`);
+    showToast("Direct GitHub connection ready");
+  } catch (error) {
+    setApiStatus(error.message || "Direct GitHub check failed", true);
+    showToast(error.message || "Direct GitHub check failed", "#dc3545");
+  }
+}
+
 async function checkApiStatus() {
   const backendUrl = getBackendDbUrl();
   if (!backendUrl) {
-    setApiStatus("No write backend configured. Public GitHub Pages db.json is read-only.", true);
+    await checkDirectGitHubStatus();
     return;
   }
 
@@ -316,41 +416,88 @@ async function getAdminKey() {
   return adminKey;
 }
 
-async function syncDBToGitHub() {
-  // GitHub tokens must stay on the server. This sends db changes to server.js,
-  // which reads GITHUB_TOKEN from .env and updates db.json through GitHub's API.
-  const backendUrl = getBackendDbUrl();
-  if (!backendUrl) {
-    showToast("Read-only mode. Add a backend API URL in Settings to save to GitHub db.json.", "#f7971e");
-    updateApiStatus();
+async function saveThroughBackend(backendUrl) {
+  const adminKey = await getAdminKey();
+  if (!adminKey) {
+    showToast("Save cancelled: admin key is required.", "#f7971e");
     return;
   }
 
+  setApiStatus("Saving database through backend API ...");
+  const response = await fetch(backendUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-key": adminKey
+    },
+    body: JSON.stringify(db, null, 2)
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+    throw new Error(result.error || `Save failed: HTTP ${response.status}`);
+  }
+
+  setApiStatus(`Saved to GitHub db.json${result.commit ? ` at commit ${String(result.commit).slice(0, 7)}` : ""}`);
+  showToast("Saved to API database");
+}
+
+async function saveDirectlyToGitHub() {
+  validateDatabaseShape(db);
+  const token = await getDirectGitHubToken();
+  if (!token) {
+    showToast("Save cancelled: GitHub token is required.", "#f7971e");
+    setApiStatus("Enter a GitHub token in Settings, or configure a backend API URL.", true);
+    return;
+  }
+
+  setApiStatus("Saving directly to GitHub db.json ...");
+
+  const currentResponse = await fetch(`${getGitHubContentsApiUrl(true)}&t=${Date.now()}`, {
+    headers: githubApiHeaders(token),
+    cache: "no-store"
+  });
+  const current = await currentResponse.json().catch(() => ({}));
+  if (!currentResponse.ok) {
+    if (currentResponse.status === 401 || currentResponse.status === 403) sessionStorage.removeItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY);
+    throw new Error(current.message || `GitHub read failed: HTTP ${currentResponse.status}`);
+  }
+
+  const updateResponse = await fetch(getGitHubContentsApiUrl(false), {
+    method: "PUT",
+    headers: {
+      ...githubApiHeaders(token),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: "Update db.json from Laor License Manager",
+      content: base64EncodeUtf8(JSON.stringify(db, null, 2) + "\n"),
+      sha: current.sha,
+      branch: GITHUB_BRANCH
+    })
+  });
+
+  const result = await updateResponse.json().catch(() => ({}));
+  if (!updateResponse.ok) {
+    if (updateResponse.status === 401 || updateResponse.status === 403) sessionStorage.removeItem(DIRECT_GITHUB_TOKEN_STORAGE_KEY);
+    throw new Error(result.message || `GitHub update failed: HTTP ${updateResponse.status}`);
+  }
+
+  const shortCommit = result.commit && result.commit.sha ? String(result.commit.sha).slice(0, 7) : "";
+  setApiStatus(`Saved directly to GitHub db.json${shortCommit ? ` at commit ${shortCommit}` : ""}. GitHub Pages may need a minute to refresh.`);
+  showToast("Saved directly to API database");
+}
+
+async function syncDBToGitHub() {
+  const backendUrl = getBackendDbUrl();
+
   try {
-    const adminKey = await getAdminKey();
-    if (!adminKey) {
-      showToast("Save cancelled: admin key is required.", "#f7971e");
-      return;
+    if (backendUrl) {
+      await saveThroughBackend(backendUrl);
+    } else {
+      await saveDirectlyToGitHub();
     }
-
-    setApiStatus("Saving database to GitHub db.json ...");
-    const response = await fetch(backendUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-key": adminKey
-      },
-      body: JSON.stringify(db, null, 2)
-    });
-
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
-      throw new Error(result.error || `Save failed: HTTP ${response.status}`);
-    }
-
-    setApiStatus(`Saved to GitHub db.json${result.commit ? ` at commit ${String(result.commit).slice(0, 7)}` : ""}`);
-    showToast("Saved to API database");
   } catch (error) {
     console.error("Could not save to GitHub db.json", error);
     setApiStatus(error.message || "Could not save to GitHub db.json", true);

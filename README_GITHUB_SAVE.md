@@ -1,16 +1,27 @@
-# Direct GitHub save for `db.json`
+# Save edits to GitHub `db.json`
 
-This version can read and write the remote `db.json` used by:
+This version can read and write the remote database used by:
 
 ```text
 https://laor-yt.github.io/laor-dubber-license-manager/db.json
 ```
 
-The browser does not write to GitHub directly. It sends edits to `server.js`; the server uses `GITHUB_TOKEN` from `.env` to update `db.json` safely.
+It supports two save methods:
+
+- **Direct GitHub Save**: works on GitHub Pages/static hosting. Enter a GitHub token in **Settings -> API Database Editor**. The token stays in this browser session only.
+- **Backend API Save**: run or deploy `server.js`; the server uses `GITHUB_TOKEN` from `.env` to update `db.json`.
 
 For full setup instructions, read `README_API_DATABASE_EDIT.md`.
 
-## Quick local setup
+## Quick static/GitHub Pages setup
+
+1. Open the app.
+2. Go to **Settings -> API Database Editor -> Direct GitHub Save**.
+3. Paste a new fine-grained GitHub token with **Contents: Read and write**.
+4. Click **Test Direct GitHub**.
+5. Edit data and click save.
+
+## Quick backend setup
 
 ```bash
 cp .env.example .env
@@ -34,4 +45,4 @@ npm run push-db
 
 ## Important
 
-Never put `GITHUB_TOKEN` inside frontend files like `app.js`, `index.html`, or `config.js`. A token in frontend code can be stolen by anyone who opens the page.
+Never hardcode `GITHUB_TOKEN` inside frontend files like `app.js`, `index.html`, or `config.js`. A token in frontend code can be stolen by anyone who opens the page.
