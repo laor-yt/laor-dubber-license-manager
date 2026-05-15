@@ -64,13 +64,13 @@
       "owner_email": "User"
     },
     {
+      "devices": [],
       "id": "LIC-MP6CKPD5AHB",
       "license_key": "G5YM-47FU-7I62",
-      "product_name": "Laor DownClip",
+      "product_name": "LaorDownClip",
       "status": "active",
       "end_date": "Lifrtime",
       "max_devices": 1,
-      "devices": [],
       "role": "admin",
       "created_date": "2026-05-15",
       "owner_name": "Theng Rithy",
