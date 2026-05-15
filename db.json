@@ -75,6 +75,19 @@
       "created_date": "2026-05-15",
       "owner_name": "Theng Rithy",
       "owner_email": ""
+    },
+    {
+      "id": "LIC-MP6D0BYVFL5",
+      "license_key": "JKDR-4JEZ-IT6I",
+      "product_name": "LaorDownClip",
+      "status": "active",
+      "end_date": "Lifetime",
+      "max_devices": 1,
+      "devices": [],
+      "role": "user",
+      "created_date": "2026-05-15",
+      "owner_name": "User",
+      "owner_email": ""
     }
   ]
 }
